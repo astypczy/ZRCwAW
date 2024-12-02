@@ -1,5 +1,5 @@
 ---
-- name: Configure Frontend Server
+- name: Configure Backend Server
   hosts: all
   become: true
   tasks:
@@ -8,29 +8,35 @@
         update_cache: yes
         upgrade: dist
 
-    - name: Install Docker
+    - name: Install required packages for Java and Maven
       apt:
-        name: docker.io
+        name:
+          - openjdk-17-jdk
+          - maven
+          - git
         state: present
 
-    - name: Enable and start Docker service
-      systemd:
-        name: docker
-        enabled: true
-        state: started
+    - name: Verify Java installation
+      shell: java -version
+      register: java_version_output
+    - debug:
+        msg: "{{ java_version_output.stdout }}"
 
-    - name: Pull the frontend Docker image
-      command: docker pull my-frontend-image:latest
+    - name: Clone repository
+      git:
+        repo: 'https://github.com/astypczy/ZRCwAW.git'
+        dest: /opt/ZRCwAW
 
-    - name: Run the frontend Docker container
-      command: >
-        docker run -d --name frontend-container -p 4200:4200
-        my-frontend-image:latest
+    - name: Navigate to backend directory
+      shell: cd /opt/ZRCwAW/ec2/backend
+      args:
+        warn: false
 
-    - name: Verify the frontend container is running
-      shell: docker ps --filter "name=frontend-container"
-      register: container_status
+    - name: Build backend application with Maven
+      command: mvn clean package -DskipTests
+      args:
+        chdir: /opt/ZRCwAW/ec2/backend
 
-    - name: Display container status
-      debug:
-        msg: "{{ container_status.stdout }}"
+    - name: Run backend application
+      shell: |
+        nohup java -jar /opt/ZRCwAW/ec2/backend/target/*.jar &

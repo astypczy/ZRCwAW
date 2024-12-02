@@ -15,10 +15,9 @@ resource "aws_instance" "backend_instance" {
   }
 }
 
-#create eip
-resource "aws_eip" "backend_eip" {
-    domain = "vpc" 
-    instance = aws_instance.backend_instance.id
+resource "aws_eip_association" "backend_eip_association" {
+  instance_id = aws_instance.backend_instance.id
+  public_ip   = "107.21.128.230"
 }
 
 resource "aws_instance" "frontend_instance" {
@@ -35,10 +34,9 @@ resource "aws_instance" "frontend_instance" {
   }
 }
 
-#create eip
-resource "aws_eip" "frontend_eip" {
-    domain = "vpc"
-    instance = aws_instance.frontend_instance.id
+resource "aws_eip_association" "frontend_eip_association" {
+  instance_id = aws_instance.frontend_instance.id
+  public_ip   = "52.20.47.142"
 }
 
 locals {
@@ -60,19 +58,19 @@ resource "null_resource" "save_db_endpoint" {
   }
   depends_on = [aws_db_instance.postgres_instance]
 }
-# resource "null_resource" "run_ansible_backend" {
-#   provisioner "local-exec" {
-#     command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${local.backend_instance_ip},' -u ubuntu --private-key ~/.ssh/labsuser.pem playbook-backend.yml"
-#   }
-#   depends_on = [aws_instance.backend_instance]
-# }
+resource "null_resource" "run_ansible_backend" {
+  provisioner "local-exec" {
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${local.backend_instance_ip},' -u ubuntu --private-key ~/.ssh/labsuser.pem playbook-backend.yml"
+  }
+  depends_on = [aws_instance.backend_instance]
+}
 
-# resource "null_resource" "run_ansible_frontend" {
-#   provisioner "local-exec" {
-#     command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${local.frontend_instance_ip},' -u ubuntu --private-key ~/.ssh/labsuser.pem playbook-frontend.yml"
-#   }
-#   depends_on = [aws_instance.frontend_instance]
-# }
+resource "null_resource" "run_ansible_frontend" {
+  provisioner "local-exec" {
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${local.frontend_instance_ip},' -u ubuntu --private-key ~/.ssh/labsuser.pem playbook-frontend.yml"
+  }
+  depends_on = [aws_instance.frontend_instance]
+}
 
 resource "aws_security_group" "backend-sg" {
   name        = "backend-sg"
@@ -173,7 +171,7 @@ resource "aws_security_group" "postgres_security_group" {
   }
 
   tags = {
-    Name = "postgres-db-sg"
+    Name = "postgres-db-sg_v2"
   }
 }
 
