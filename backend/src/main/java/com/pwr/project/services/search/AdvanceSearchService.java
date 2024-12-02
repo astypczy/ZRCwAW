@@ -2,27 +2,28 @@ package com.pwr.project.services.search;
 
 import com.pwr.project.entities.Notice;
 import com.pwr.project.entities.search.SearchCriteriaRequest;
+import com.pwr.project.entities.search.SearchResponse;
 import com.pwr.project.repositories.NoticeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specification;
+
+import lombok.RequiredArgsConstructor;
+
+import org.modelmapper.ModelMapper;
+
 import org.springframework.stereotype.Service;
+
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class AdvanceSearchService {
+    private final NoticeRepository noticeRepository;
 
-    @Autowired
-    private NoticeRepository noticeRepository;
+    private final ModelMapper modelMapper;
 
-    public List<Notice> findBySearchCriteria(SearchCriteriaRequest searchCriteriaRequest) {
-        Specification<Notice> searchSpecification = SearchSpecification
-            .createSpecification(searchCriteriaRequest.getSearchCriteria());
-
-        if (searchSpecification == null) {
-            return noticeRepository.findAll();
-        }
-
-        return noticeRepository.findAll(searchSpecification);
+    public List<SearchResponse> searchNoticeByCriteria(SearchCriteriaRequest searchCriteriaRequest){
+        List<Notice> notices = noticeRepository.findAll(
+                SearchSpecification.createSpecification(searchCriteriaRequest.getSearchCriteria()));
+        return notices.stream().map(i -> modelMapper.map(i, SearchResponse.class)).toList();
     }
 }

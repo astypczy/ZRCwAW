@@ -7,11 +7,15 @@ import com.pwr.project.dto.LoginDTO;
 import com.pwr.project.dto.RegisterDTO;
 import com.pwr.project.entities.User;
 import com.pwr.project.exceptions.InvalidJWTException;
+import com.pwr.project.exceptions.UnauthenticatedUserException;
 import com.pwr.project.repositories.UserRepository;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,6 +29,8 @@ import java.util.stream.Collectors;
 @Service
 public class AuthService implements UserDetailsService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+    
     @Autowired
     UserRepository userRepository;
 
@@ -108,53 +114,42 @@ public class AuthService implements UserDetailsService {
 
 
     public User getCurrentUser() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            String login = ((UserDetails) principal).getUsername();
-            return userRepository.findUserByLogin(login)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        } else if (principal instanceof String) {
-            return userRepository.findUserByLogin((String) principal)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.debug("Current authentication: {}", authentication);
+
+        if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+            throw new UnauthenticatedUserException("No authenticated user found");
         }
-        throw new IllegalStateException("Current user is not authenticated");
+
+        String userCognitoSub = authentication.getName(); // Zakładamy, że `getName()` zwraca userCognitoSub
+        log.info("Fetching user with cognitoSub: {}", userCognitoSub);
+
+        return userRepository.findByCognitoSub(userCognitoSub)
+                .orElseThrow(() -> new UserNotFoundException("User not found for email: " + userCognitoSub));
+
     }
 
-    public List<User> getAllUsers() {
-        ListUsersRequest request = new ListUsersRequest()
-                .withUserPoolId(userPoolId);
-        ListUsersResult result = cognitoClient.listUsers(request);
+public List<User> getAllUsers() {
+    // Pobranie wszystkich użytkowników z bazy danych
+    List<User> usersFromDb = userRepository.findByCognitoSubIsNotNull();
 
-        return result.getUsers().stream().map(user -> {
-            String username = user.getUsername();
-            String email = user.getAttributes().stream()
-                    .filter(attr -> "email".equals(attr.getName()))
-                    .findFirst()
-                    .map(AttributeType::getValue)
-                    .orElse(null);
-            String givenName = user.getAttributes().stream()
-                    .filter(attr -> "given_name".equals(attr.getName()))
-                    .findFirst()
-                    .map(AttributeType::getValue)
-                    .orElse(null);
-            String familyName = user.getAttributes().stream()
-                    .filter(attr -> "family_name".equals(attr.getName()))
-                    .findFirst()
-                    .map(AttributeType::getValue)
-                    .orElse(null);
-            Boolean isSeller = user.getAttributes().stream()
-                    .filter(attr -> "custom:isSeller".equals(attr.getName()))
-                    .findFirst()
-                    .map(attr -> Boolean.valueOf(attr.getValue()))
-                    .orElse(false);
+    return usersFromDb.stream().map(user -> {
+        // Załóżmy, że nasza encja `User` ma atrybuty takie jak: firstName, surname, login, email i isSeller
+        String email = user.getEmail();
+        String givenName = user.getFirstName();
+        String familyName = user.getSurname();
+        String username = user.getLogin();
+        Boolean isSeller = user.getIsSeller();
 
-            return User.builder()
-                    .firstName(givenName)
-                    .surname(familyName)
-                    .login(username)
-                    .email(email)
-                    .isSeller(isSeller)
-                    .build();
-        }).collect(Collectors.toList());
-    }
+        // Zwracamy obiekt `User` z tych danych
+        return User.builder()
+                .firstName(givenName)
+                .surname(familyName)
+                .login(username)
+                .email(email)
+                .isSeller(isSeller)
+                .build();
+    }).collect(Collectors.toList());
+}
+
 }
