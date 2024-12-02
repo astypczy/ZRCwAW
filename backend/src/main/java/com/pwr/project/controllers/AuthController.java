@@ -62,7 +62,12 @@ public class AuthController {
     public ResponseEntity<User> getCurrentUser(@RequestHeader("Authorization") String authHeader){
         log.info("received authentication header: {}", authHeader);
         try{
+            
+            String token = authHeader.replace("Bearer", "");
+            log.info("Extacted token: {}", token);
+            
             User currentUser = authService.getCurrentUser();
+            log.info("Found user: {}", currentUser);
             return ResponseEntity.ok(currentUser);
         } catch (Exception e){
             log.error("Error getting user :",e);

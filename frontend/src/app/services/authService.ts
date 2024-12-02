@@ -180,9 +180,11 @@ export class AuthService {
       'Authorization': `Bearer ${this.getIdToken()}`, // Cognito token
       'Content-Type': 'application/json'
     })
+    
+    console.log('Token being set:', this.getIdToken()); 
     return this.http.get<User>(`${authApiPrefix}/current-user`, {
-      headers: headers,
-      withCredentials: true
+      headers: headers
+      //withCredentials: true
     }).pipe(
       catchError((error: any) => {
         console.error("Error getting current user:", error);

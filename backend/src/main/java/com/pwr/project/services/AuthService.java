@@ -8,10 +8,12 @@ import com.pwr.project.dto.RegisterDTO;
 import com.pwr.project.entities.User;
 import com.pwr.project.exceptions.InvalidJWTException;
 import com.pwr.project.repositories.UserRepository;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 @Service
 public class AuthService implements UserDetailsService {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+    
     @Autowired
     UserRepository userRepository;
 
@@ -108,16 +112,28 @@ public class AuthService implements UserDetailsService {
 
 
     public User getCurrentUser() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            String login = ((UserDetails) principal).getUsername();
-            return userRepository.findUserByLogin(login)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        } else if (principal instanceof String) {
-            return userRepository.findUserByLogin((String) principal)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        // Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // if (principal instanceof UserDetails) {
+        //     String login = ((UserDetails) principal).getUsername();
+        //     return userRepository.findUserByLogin(login)
+        //         .orElseThrow(() -> new RuntimeException("User not found"));
+        // } else if (principal instanceof String) {
+        //     return userRepository.findUserByLogin((String) principal)
+        //         .orElseThrow(() -> new RuntimeException("User not found"));
+        // }
+        // throw new IllegalStateException("Current user is not authenticated");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        log.info("Current authentication: {}", authentication);
+        
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("No authenticated user found");
         }
-        throw new IllegalStateException("Current user is not authenticated");
+
+        String userEmail = authentication.getName();
+        log.info("Looking for user with email: {}", userEmail);
+        
+        return userRepository.findByEmail(userEmail)
+            .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     public List<User> getAllUsers() {
