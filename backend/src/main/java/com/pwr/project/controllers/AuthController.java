@@ -1,6 +1,5 @@
 package com.pwr.project.controllers;
 
-import com.pwr.project.config.auth.TokenProvider;
 import com.pwr.project.dto.JwtDTO;
 import com.pwr.project.dto.LoginDTO;
 import com.pwr.project.dto.RegisterDTO;
@@ -25,8 +24,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-   @Autowired
-   private AuthenticationManager authenticationManager;
+//    @Autowired
+//    private AuthenticationManager authenticationManager;
 
     @Autowired
     private AuthService authService;
@@ -45,8 +44,14 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginDTO loginDTO) throws InvalidJWTException {
-        JwtDTO jwtDTO = authService.login(loginDTO);
-        return ResponseEntity.ok(jwtDTO);
+        try{
+            JwtDTO jwtDTO = authService.login(loginDTO);
+            return ResponseEntity.ok(jwtDTO);
+        } catch (Exception e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body("Invalid credentials");
+        }
+
     }
 
 
