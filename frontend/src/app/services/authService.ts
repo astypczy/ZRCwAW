@@ -176,9 +176,22 @@ export class AuthService {
   }
 
   getCurrentUser(): Observable<User> {
-    return this.http.get<User>(`${authApiPrefix}/current-user`, { headers: this.getAuthHeaders() });
-  }
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${this.getIdToken()}`, // Cognito token
+      'Content-Type': 'application/json'
+    })
+    return this.http.get<User>(`${authApiPrefix}/current-user`, {
+      headers: headers,
+      withCredentials: true
+    }).pipe(
+      catchError((error: any) => {
+        console.error("Error getting current user:", error);
+        return throwError(() => error);
+      })
+    );
+    }
 
+  // return this.http.get<User>(`${authApiPrefix}/current-user`, { headers: this.getAuthHeaders() });
   getAllUsers(): Observable<User[]> {
     return this.http.get<User[]>(`${authApiPrefix}/users`, { headers: this.getAuthHeaders() });
   }
