@@ -9,7 +9,8 @@ import com.pwr.project.repositories.UserRepository;
 import com.pwr.project.services.AuthService;
 
 import jakarta.validation.Valid;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,8 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Valid RegisterDTO registerDTO) throws InvalidJWTException {
         authService.register(registerDTO);
@@ -56,9 +59,15 @@ public class AuthController {
 
 
     @GetMapping("/current-user")
-    public ResponseEntity<User> getCurrentUser() {
-        User currentUser = authService.getCurrentUser();
-        return ResponseEntity.ok(currentUser);
+    public ResponseEntity<User> getCurrentUser(@RequestHeader("Authorization") String authHeader){
+        log.info("received authentication header: {}", authHeader);
+        try{
+            User currentUser = authService.getCurrentUser();
+            return ResponseEntity.ok(currentUser);
+        } catch (Exception e){
+            log.error("Error getting user :",e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 
     @PreAuthorize("hasRole('ADMIN')")
