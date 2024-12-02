@@ -1,5 +1,4 @@
 package com.pwr.project.controllers;
-
 import com.pwr.project.dto.JwtDTO;
 import com.pwr.project.dto.LoginDTO;
 import com.pwr.project.dto.RegisterDTO;
@@ -23,6 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin(origins = "http://localhost:4200", allowCredentials = "true")
 public class AuthController {
 //    @Autowired
 //    private AuthenticationManager authenticationManager;
