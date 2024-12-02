@@ -3,7 +3,10 @@ package com.pwr.project.controllers;
 import com.pwr.project.dto.NoticeDTO;
 import com.pwr.project.entities.Notice;
 import com.pwr.project.entities.datatypes.File;
+import com.pwr.project.entities.search.SearchCriteriaRequest;
+import com.pwr.project.entities.search.SearchResponse;
 import com.pwr.project.services.NoticeService;
+import com.pwr.project.services.search.AdvanceSearchService;
 import com.pwr.project.services.search.NoticeSearchService;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,9 @@ import java.util.List;
 @RequestMapping("/api/notices")
 @CrossOrigin(origins = "http://localhost:4200")  // This will apply to all methods
 public class NoticeController {
+
+    @Autowired
+    private AdvanceSearchService advanceSearchService;
 
     @Autowired
     private NoticeService noticeService;
@@ -96,5 +102,10 @@ public class NoticeController {
     @GetMapping("/search")
     public ResponseEntity<List<Notice>> searchNotices(@RequestParam String query) {
         return ResponseEntity.ok(noticeSearchService.searchNotices(query));
+    }
+
+    @PostMapping("/filter")
+    public ResponseEntity<List<SearchResponse>> searchByCriteria(@RequestBody SearchCriteriaRequest searchCriteriaRequest){
+        return ResponseEntity.ok(advanceSearchService.searchNoticeByCriteria(searchCriteriaRequest));
     }
 }
