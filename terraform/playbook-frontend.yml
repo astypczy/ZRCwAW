@@ -1,0 +1,109 @@
+---
+- name: Configure Frontend Server
+  hosts: all
+  become: true
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install required packages for Node.js
+      apt:
+        name:
+          - curl
+          - gnupg
+          - build-essential
+          - npm
+        state: present
+
+    - name: Download Node.js setup script
+      get_url:
+        url: https://deb.nodesource.com/setup_20.x
+        dest: /tmp/setup_20.x.sh
+
+    - name: Run Node.js setup script
+      command: bash /tmp/setup_20.x.sh
+
+    - name: Install Node.js
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Clone repository
+      git:
+        repo: 'https://github.com/astypczy/ZRCwAW.git'
+        dest: /opt/ZRCwAW
+
+    - name: Install frontend dependencies
+      command: npm install
+      args:
+        chdir: /opt/ZRCwAW/ec2/frontend
+
+    # - name: Build frontend application
+  #     command: npm run build
+  #     args:
+  #       chdir: /opt/ZRCwAW/ec2/frontend
+
+  #   - name: Create missing directories if needed
+  #     file:
+  #       path: "{{ item }}"
+  #       state: directory
+  #       mode: '0755'
+  #       owner: www-data
+  #       group: www-data
+  #     loop:
+  #       - /var/www
+  #       - /home/ubuntu/.npm
+
+  #   - name: Set permissions on frontend application directory
+  #     file:
+  #       path: /opt/ZRCwAW/ec2/frontend
+  #       mode: '0755'
+  #       owner: www-data
+  #       group: www-data
+  #       recurse: yes
+
+  #   - name: Set permissions on npm directory
+  #     file:
+  #       path: /home/ubuntu/.npm
+  #       mode: '0755'
+  #       owner: www-data
+  #       group: www-data
+  #       recurse: yes
+
+  #   - name: Set permissions on /var/www directory
+  #     file:
+  #       path: /var/www
+  #       mode: '0755'
+  #       owner: www-data
+  #       group: www-data
+  #       recurse: yes
+
+  #   - name: Create systemd service for frontend
+  #     copy:
+  #       dest: /etc/systemd/system/frontend.service
+  #       content: |
+  #         [Unit]
+  #         Description=Frontend Angular Application
+  #         After=network.target
+
+  #         [Service]
+  #         Type=simple
+  #         ExecStart=/usr/bin/npx http-server /opt/ZRCwAW/ec2/frontend/dist/ -p 4200
+  #         Restart=always
+  #         User=www-data
+  #         WorkingDirectory=/opt/ZRCwAW/ec2/frontend
+  #         Environment=PATH=/usr/local/bin:$PATH  # Ensures that npm binaries are available in the service
+
+  #         [Install]
+  #         WantedBy=multi-user.target
+
+  #   - name: Reload systemd daemon
+  #     command: systemctl daemon-reload
+
+  #   - name: Enable and start frontend service
+  #     systemd:
+  #       name: frontend
+  #       enabled: true
+  #       state: started
