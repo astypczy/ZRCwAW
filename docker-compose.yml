@@ -20,4 +20,3 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgrescloud.c5w0mikaakk6.us-east-1.rds.amazonaws.com:5432/postgres
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-    network_mode: host
