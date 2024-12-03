@@ -42,8 +42,8 @@ resource "aws_eip_association" "frontend_eip_association" {
 locals {
   frontend_instance_ip = "52.20.47.142"
   backend_instance_ip  = "107.21.128.230"
-  rds_endpoint = aws_db_instance.postgres_instance2.endpoint
-}
+#   rds_endpoint = aws_db_instance.postgres_instance2.endpoint
+} 
 
 resource "null_resource" "print_ip" {
   provisioner "local-exec" {
@@ -52,12 +52,12 @@ resource "null_resource" "print_ip" {
   depends_on = [aws_instance.frontend_instance, aws_instance.backend_instance]
 }
 
-resource "null_resource" "save_db_endpoint" {
-  provisioner "local-exec" {
-    command = "echo ${local.rds_endpoint} > ../rds_endpoint.txt"
-  }
-  depends_on = [aws_db_instance.postgres_instance2]
-}
+# resource "null_resource" "save_db_endpoint" {
+#   provisioner "local-exec" {
+#     command = "echo ${local.rds_endpoint} > ../rds_endpoint.txt"
+#   }
+#   depends_on = [aws_db_instance.postgres_instance2]
+# }
 resource "null_resource" "run_ansible_backend" {
   provisioner "local-exec" {
     command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i '${local.backend_instance_ip},' -u ubuntu --private-key ~/.ssh/labsuser.pem playbook-backend.yml"
@@ -159,44 +159,44 @@ resource "aws_vpc_security_group_ingress_rule" "frontend_allow_http_ipv4" {
 #   ip_protocol       = "-1"
 # }
 
-resource "aws_security_group" "postgres_security_group2" {
-  name        = "postgres_security_group2"
-  description = "Security Group for PostgreSQL"
+# resource "aws_security_group" "postgres_security_group2" {
+#   name        = "postgres_security_group2"
+#   description = "Security Group for PostgreSQL"
 
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+#   ingress {
+#     from_port   = 5432
+#     to_port     = 5432
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
 
-  tags = {
-    Name = "postgres-db-sg_v2"
-  }
-}
+#   tags = {
+#     Name = "postgres-db-sg_v2"
+#   }
+# }
 
-resource "aws_db_instance" "postgres_instance2" {
-  allocated_storage    = 20
-  engine               = "postgres"
-  instance_class       = "db.t3.micro"
-  identifier           = "postgrescloud2"
-  db_name              = "clouddb"
-  username             = "postgres"
-  password             = "postgres"
-  skip_final_snapshot  = true 
-  vpc_security_group_ids  = [aws_security_group.postgres_security_group2.id] 
+# resource "aws_db_instance" "postgres_instance2" {
+#   allocated_storage    = 20
+#   engine               = "postgres"
+#   instance_class       = "db.t3.micro"
+#   identifier           = "postgrescloud2"
+#   db_name              = "clouddb"
+#   username             = "postgres"
+#   password             = "postgres"
+#   skip_final_snapshot  = true 
+#   vpc_security_group_ids  = [aws_security_group.postgres_security_group2.id] 
 
 
-  # Ustawienia opcjonalne
-  storage_type          = "gp2" 
-  backup_retention_period = 7 
-  multi_az              = false
-  publicly_accessible   = true  
+#   # Ustawienia opcjonalne
+#   storage_type          = "gp2" 
+#   backup_retention_period = 7 
+#   multi_az              = false
+#   publicly_accessible   = true  
 
-  tags = {
-    Name = "postgres-db2"
-  }
-}
+#   tags = {
+#     Name = "postgres-db2"
+#   }
+# }
 
 output "backend_instance_public_ip" {
   value = aws_instance.backend_instance.public_ip
@@ -206,6 +206,6 @@ output "frontend_instance_public_ip" {
   value = aws_instance.frontend_instance.public_ip
 }
 
-output "rds_endpoint" {
-  value = aws_db_instance.postgres_instance2.endpoint
-}
+# output "rds_endpoint" {
+#   value = aws_db_instance.postgres_instance2.endpoint
+# }
